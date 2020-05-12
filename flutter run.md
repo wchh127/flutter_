@@ -189,7 +189,7 @@ Build phase中指定了一个脚本
 
 也就是BuildAotCommand类：build_aot.dart
 
-1、KernelCompiler.compileKernel
+1)、KernelCompiler.compileKernel
 
 编译dart文件，在项目目录/build/aot目录下产出以下文件：
 
@@ -217,7 +217,7 @@ flutter/bin/cache/dart-sdk/bin/dart
 
 
 
-2、遍历所有的arch：
+2)、遍历所有的arch：
 
 对每一个arch进行AOTSnapshotter.build方法，而此方法的作用是，将dart kernel转换为AOT二进制机器码，比如在arm64架构下，命令如下
 
@@ -257,7 +257,7 @@ xcrun clang
 -o = 项目目录build/aot/目标arch目录下/App.framework/App
 ```
 
-3、使用lipo命令，把上一步中，生成的多个单arch的App.framework 合并成一个 多arch的App.framework
+3)、使用lipo命令，把上一步中，生成的多个单arch的App.framework 合并成一个 多arch的App.framework
 
 ```
 lipo  -create 
