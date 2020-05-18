@@ -27,7 +27,7 @@ export PATH=/Users/chunhongwang/install/flutter/bin:$PATH
 DART = flutter仓库目录/bin/cache/dart-sdk
 SNAPSHOT_PATH = flutter仓库目录/bin/cache/flutter_tools.snapshot
 
-意思是：用dart解释器（？？？）执行flutter_tools.snapshot文件，也就是执行flutter_tools.dart的main()方法，所以以上命令相当于
+意思是：用dart解释器执行flutter_tools.snapshot文件，也就是执行flutter_tools.dart的main()方法，所以以上命令相当于
 
 ```
 /bin/cache/dart-sdk/bin/dart $FLUTTER_TOOL_ARGS "$FLUTTER_ROOT/packages/flutter_tools/bin/flutter_tools.dart" "$@"
@@ -54,7 +54,7 @@ flutter build bundle -> BuildBundleCommand
 
 综上过程，执行的flutter命令的实现都在 flutter仓库/bin/packages/flutter_tools目录里。
 
-###flutter create *(项目名) 命令
+###flutter create *(项目名) 
 
 ```CreateCommand```，主要工作是就是：创建项目目录，以及安卓和ios的工程，以及默认的```lib/main.dart```
 
@@ -204,7 +204,7 @@ flutter/bin/cache/dart-sdk/bin/dart
   package:项目目录/lib/main.dart
 ```
 
-由上诉命令可以看出，主要是使用前端编译器frontend_server进行编译的，它的主要工作是先将项目的dart代码转换成AST（抽象语法树），再将整理dart代码得到Component对象的内容，执行全局的混淆等转换工作后，写入app.dill文件中。
+由上述命令可以看出，主要是使用前端编译器frontend_server进行编译的，它的主要工作是先将项目的dart代码转换成AST（抽象语法树），再将整理dart代码得到Component对象的内容，执行全局的混淆等转换工作后，写入app.dill文件中。
 
 而Component的成员变量主要有以下三个：
 
@@ -226,7 +226,7 @@ app.dill  //主要是产出此文件，包含了dart代码的信息
 
 遍历所有的arch：
 
-对每一个arch进行AOTSnapshotter.build方法，而此方法的作用是，将dart代码生成AOT二进制机器码，文件类型是app-aot-assembly，比如在arm64架构下，命令如下
+对每一个arch，执行AOTSnapshotter.build方法，而此方法的作用是，将dart代码生成AOT二进制机器码，文件类型是app-aot-assembly，比如在arm64架构下，命令如下
 
 ```
 /usr/bin/arch -arm64 flutter/bin/cache/artifacts/engine/ios-release/gen_snapshot
@@ -307,6 +307,8 @@ lipo  -create
 
 综合以上所有的步骤，总结起来就是先编译项目中的dart代码得到  最终编译得到kernel文件，再针对每一个arch编译成对应的机器码，最终得到 App.framework文件
 
+
+
 ##### 2、flutter build bundle
 
 BuildBundleCommand
@@ -324,9 +326,16 @@ BuildBundleCommand
 - packages/cupertino_icons/assets/CupertinoIcons.ttf
 
 
-##### 3、xcode_backend.sh中剩下的内容
 
-copy Flutter.framework  App.framework以及资源文件到目标目录下等（待补充）
+##### 3、xcode_backend.sh整体流程
+
+- 在项目工程中，创建ios/Flutter子目录出来，移除旧的 App.framework
+- 复制flutter仓库里的 Flutter.podspec和Flutter.framework到 ios/Flutter目录下
+- 执行flutter build aot，编译生成App.framework，并将它复制到 ios/Flutter目录下
+- 如果是release模式，允许 xcrun dysmutil工具，生成dsym文件
+- 链接App.framework
+- 复制AppFrameworkInfo.plist的内容到 /ios/Flutter/App.framework/Info.plist文件中
+- 执行flutter build bundle，把一些资源放入App.framework/flutter_assets目录中
 
 
 
@@ -338,19 +347,17 @@ copy Flutter.framework  App.framework以及资源文件到目标目录下等（�
 
 其实```flutter install```的命令也是最终调用的IOSDevice.installApp
 
-->  Device.installApp
+->  调用Device.installApp 
 
-如果有旧的安装包，就先删除旧的安装包，再执行安装
+-> 实际调用的是IOSDevice.installApp
 
--> IOSDevice.installApp
+如果有旧的安装包，就先删除旧的安装包，再执行安装命令 
 
-执行命令 
+```
+bin/cache/artifacts/ideviceinstaller  -i  build/ios/iphoneos
+```
 
-bin/cache/artifacts/ideviceinstaller
-
--i  build/ios/iphoneos
-
-执行命令后，把build/ios/iphoneos目录的Runner文件安装到目标设备上
+也就是用ideviceinstaller工具，安装ipa包，把build/ios/iphoneos目录的Runner.ipa安装到目标设备上
 
 ideviceinstaller如果有多台设备连接，需要-u参数执行设备id
 
